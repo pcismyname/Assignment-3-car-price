@@ -1,0 +1,10 @@
+# Local run:  docker compose up --build   ->  http://localhost:8501
+# The server uses a separate Traefik-labelled compose file (see docs/task3_deployment.md).
+services:
+  car-price-app:
+    build: .
+    image: pcismyname/car-price-a3:latest
+    container_name: chaky-car-price-a3
+    ports:
+      - "8501:8501"
+    restart: unless-stopped

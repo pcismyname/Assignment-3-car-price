@@ -1,0 +1,8 @@
+# Runtime dependencies for the deployed classifier app.
+# Pinned to the versions used to build and verify the saved model bundle.
+streamlit==1.64.0
+scikit-learn==1.8.0
+numpy==2.4.6
+scipy==1.17.1
+pandas==3.0.3
+joblib==1.5.3

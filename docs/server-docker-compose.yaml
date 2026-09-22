@@ -1,0 +1,21 @@
+# Server-side compose file for the A3 app — copy to /home/st127004/docker-compose.yaml
+# on ml-brain.cs.ait.ac.th. Traefik routes HTTPS to the container by these labels;
+# no host port is published (traffic arrives only through Traefik).
+services:
+  web-st127004:
+    image: pcismyname/car-price-a3:latest
+    container_name: web-st127004
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.st127004.rule=Host(`web-st127004.ml.brain.cs.ait.ac.th`)"
+      - "traefik.http.routers.st127004.entrypoints=websecure"
+      - "traefik.http.routers.st127004.tls=true"
+      - "traefik.http.routers.st127004.tls.certresolver=letsencrypt"
+      - "traefik.http.services.st127004.loadbalancer.server.port=8501"
+    restart: unless-stopped
+
+networks:
+  web:
+    external: true

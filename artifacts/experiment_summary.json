@@ -1,0 +1,31 @@
+{
+  "student_id": "st127004",
+  "experiment_name": "st127004-a3",
+  "n_rows_clean": 6808,
+  "bin_edges_inr": [
+    29999,
+    250000,
+    409999,
+    640000,
+    10000000
+  ],
+  "class_labels": {
+    "0": "Budget",
+    "1": "Mid-range",
+    "2": "Premium",
+    "3": "Luxury"
+  },
+  "best_configuration": {
+    "method": "batch",
+    "use_penalty": false,
+    "learning_rate": 0.1,
+    "lambda_": 0.01
+  },
+  "cv_accuracy": 0.7385220850879642,
+  "cv_macro_f1": 0.7339850947129971,
+  "test_accuracy": 0.7173274596182085,
+  "test_macro_f1": 0.7136956508236111,
+  "test_weighted_f1": 0.7183346702711786,
+  "test_macro_precision": 0.7148594064338845,
+  "test_macro_recall": 0.7130739479987609
+}
