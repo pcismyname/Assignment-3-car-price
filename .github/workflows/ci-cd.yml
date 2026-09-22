@@ -64,6 +64,26 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
+            # Write/refresh the A3 compose file so the server serves this image.
+            cat > ~/docker-compose.yaml <<'EOF'
+            services:
+              web-st127004:
+                image: pcismyname/car-price-a3:latest
+                container_name: web-st127004
+                networks:
+                  - web
+                labels:
+                  - "traefik.enable=true"
+                  - "traefik.http.routers.st127004.rule=Host(`web-st127004.ml.brain.cs.ait.ac.th`)"
+                  - "traefik.http.routers.st127004.entrypoints=websecure"
+                  - "traefik.http.routers.st127004.tls=true"
+                  - "traefik.http.routers.st127004.tls.certresolver=letsencrypt"
+                  - "traefik.http.services.st127004.loadbalancer.server.port=8501"
+                restart: unless-stopped
+            networks:
+              web:
+                external: true
+            EOF
             cd ~
             docker compose pull
             docker compose up -d
