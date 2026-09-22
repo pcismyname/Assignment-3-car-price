@@ -9,6 +9,18 @@ notebook *02 - Multinomial Logistic Regression*), hand-codes every classificatio
 optional **Ridge (L2) penalty**, runs an **MLflow** experiment, and ships a Dockerised **Streamlit**
 app with a **GitHub Actions CI/CD** pipeline.
 
+## Live deployment
+
+| | |
+|---|---|
+| **App URL** | **https://web-st127004-a3.ml.brain.cs.ait.ac.th** |
+| **GitHub** | https://github.com/pcismyname/Assignment-3-car-price |
+| Server | `ml-brain.cs.ait.ac.th` · Docker · Traefik reverse proxy · Let's Encrypt TLS |
+
+A3 runs on its **own** subdomain/container (`web-st127004-a3`) so it lives alongside the A2 app
+without replacing it. The app predicts a car's **price category** (Budget / Mid-range / Premium /
+Luxury) with its rupee range and the model's confidence.
+
 ---
 
 ## ⚠️ MLflow server status (please read)
@@ -120,8 +132,18 @@ The app collects a few car details and predicts one of four price bands
 `.github/workflows/ci-cd.yml`:
 
 1. **CI** — on every push / PR to `main`, install deps and run `pytest tests app/code/tests`.
+   ✅ Runs automatically on GitHub-hosted runners.
 2. **CD** — on a push to `main` that passes CI: build the `app/` Docker image, push it to Docker
-   Hub, and SSH-deploy it on the CSIM server (`docker compose pull && docker compose up -d`).
+   Hub, then SSH-deploy it on the CSIM server (writes `~/a3/docker-compose.yaml`,
+   `docker compose pull && up -d`). ✅ Build + push are automated.
+
+> **Network note on the deploy step.** The CSIM server only accepts SSH from **inside the AIT
+> campus network**, so GitHub-hosted runners (public internet) can't reach it — the SSH step times
+> out by design. The image build/push is fully automated; the final `docker compose up` is therefore
+> run from a campus machine. The current live deployment was performed this way from campus using the
+> exact `docker compose pull && up -d` the workflow issues. To make the pipeline's deploy step itself
+> green, register a **self-hosted runner** on a campus machine and set that job's `runs-on:
+> self-hosted` (see `docs/cicd_setup.md`).
 
 ### Required GitHub Secrets
 

@@ -79,6 +79,26 @@ When it goes green, the app is live at **https://web-st127004-a3.ml.brain.cs.ait
 
 ---
 
+## Making the deploy step green from GitHub (self-hosted runner)
+
+The CSIM server only accepts SSH from inside the AIT campus network, so a GitHub-hosted runner
+cannot reach it (the SSH step times out). To have the **deploy job run from campus and pass**,
+register a self-hosted runner on a campus machine:
+
+1. GitHub repo → **Settings → Actions → Runners → New self-hosted runner** → follow the shown
+   `./config.cmd --url ... --token ...` and `./run.cmd` steps.
+2. In `.github/workflows/ci-cd.yml`, change the deploy job to run on it:
+   ```yaml
+   build-and-deploy:
+     needs: test
+     runs-on: [self-hosted]     # was: ubuntu-latest
+   ```
+   (Keep `test` on `ubuntu-latest` — only the deploy needs campus network access.)
+3. With the runner online, every push to `main` builds, pushes, and deploys automatically.
+
+Until then, the deploy is run once from any campus machine with the two commands in the repo README
+(`scp` the compose file, then `ssh ... docker compose pull && up -d`).
+
 ## Troubleshooting
 
 | Symptom | Fix |
