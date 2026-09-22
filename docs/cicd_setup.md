@@ -33,23 +33,18 @@ gh repo create Assignment-3-car-price --private --source=. --remote=origin --pus
 This pushes `main` and immediately triggers the **CI** job (tests). CD will not deploy yet — the
 secrets aren't set.
 
-## Step 2 — Put the A3 compose file on the server
+## Step 2 — (nothing to do) the compose file is written automatically
 
-The deploy step runs `docker compose ...` from the server home dir, so it must reference the **A3**
-image. Copy the compose file from `docs/task3_deployment.md` up to the server (overwrites the A2 one):
+The deploy step SSHes in and writes `~/a3/docker-compose.yaml` on the server itself, then runs
+`docker compose pull && up -d` from `~/a3`. A3 uses its **own** subdomain/container/router
+(`web-st127004-a3`) so it runs **alongside** the A2 app without replacing it. No manual `scp` is
+needed. (`docs/server-docker-compose.yaml` is the same file, kept for reference / manual deploys.)
 
-```bash
-scp -i ~/.ssh/st127004 docs/server-docker-compose.yaml \
-    st127004@ml-brain.cs.ait.ac.th:~/docker-compose.yaml
-```
-
-> `docs/server-docker-compose.yaml` is provided in this repo ready to copy.
-
-## Step 3 — Set the five GitHub Secrets
+## Step 3 — Set the six GitHub Secrets
 
 ```bash
 gh secret set DOCKERHUB_USERNAME --body "pcismyname"
-gh secret set DOCKERHUB_TOKEN    --body "<paste-your-docker-hub-token>"
+gh secret set DOCKERHUB_TOKEN    --body "<docker-hub-token-with-READ-WRITE-scope>"
 gh secret set SSH_HOST           --body "ml-brain.cs.ait.ac.th"
 gh secret set SSH_USER           --body "st127004"
 gh secret set SSH_PASSPHRASE     --body "<your-ssh-key-passphrase>"
@@ -57,6 +52,9 @@ gh secret set SSH_PASSPHRASE     --body "<your-ssh-key-passphrase>"
 # The private key is read straight from the file (no copy/paste):
 gh secret set SSH_PRIVATE_KEY < ~/.ssh/st127004
 ```
+
+> The Docker Hub token **must have Read & Write scope** — a read-only token builds but fails to push
+> with `unauthorized: access token has insufficient scopes`.
 
 Verify:
 
@@ -76,7 +74,7 @@ git push
 gh run watch
 ```
 
-When it goes green, the app is live at **https://web-st127004.ml.brain.cs.ait.ac.th**
+When it goes green, the app is live at **https://web-st127004-a3.ml.brain.cs.ait.ac.th**
 (allow ~30 s for Traefik to issue the TLS cert on first deploy).
 
 ---
@@ -88,5 +86,6 @@ When it goes green, the app is live at **https://web-st127004.ml.brain.cs.ait.ac
 | `test` job fails | Reproduce locally: `pytest tests app/code/tests -q`. |
 | `docker login` step fails | `DOCKERHUB_TOKEN` wrong/expired — regenerate and `gh secret set` again. |
 | SSH step: `ssh: handshake failed` | Wrong `SSH_PASSPHRASE`, or the public key isn't in the server's `~/.ssh/authorized_keys`. |
-| Deploys but 502 in browser | Container name/labels must match Traefik; check `docker logs web-st127004` on the server. |
+| `unauthorized: access token has insufficient scopes` | Docker Hub token is read-only — regenerate with **Read & Write** and re-set `DOCKERHUB_TOKEN`. |
+| Deploys but 502 in browser | Container name/labels must match Traefik; check `docker logs web-st127004-a3` on the server. |
 | Only want CI, not auto-deploy | Delete the `build-and-deploy` job, or leave its secrets unset (CI still runs). |

@@ -64,23 +64,24 @@ the MLflow **Models** UI (or `mlflow.register_model(...)`).
 
 ## Server-side `docker-compose.yaml`
 
-Place this at `/home/st127004/docker-compose.yaml` on the server (the SSH deploy step runs
-`docker compose pull && up -d` from the home directory):
+The CI/CD deploy step **writes this automatically** to `~/a3/docker-compose.yaml` on the server and
+runs `docker compose pull && up -d` from `~/a3`. A3 uses its **own** subdomain / container / router
+(`web-st127004-a3`) so it runs **alongside** the A2 app rather than replacing it.
 
 ```yaml
 services:
-  web-st127004:
+  web-st127004-a3:
     image: pcismyname/car-price-a3:latest
-    container_name: web-st127004
+    container_name: web-st127004-a3
     networks:
       - web
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.st127004.rule=Host(`web-st127004.ml.brain.cs.ait.ac.th`)"
-      - "traefik.http.routers.st127004.entrypoints=websecure"
-      - "traefik.http.routers.st127004.tls=true"
-      - "traefik.http.routers.st127004.tls.certresolver=letsencrypt"
-      - "traefik.http.services.st127004.loadbalancer.server.port=8501"
+      - "traefik.http.routers.st127004-a3.rule=Host(`web-st127004-a3.ml.brain.cs.ait.ac.th`)"
+      - "traefik.http.routers.st127004-a3.entrypoints=websecure"
+      - "traefik.http.routers.st127004-a3.tls=true"
+      - "traefik.http.routers.st127004-a3.tls.certresolver=letsencrypt"
+      - "traefik.http.services.st127004-a3.loadbalancer.server.port=8501"
     restart: unless-stopped
 
 networks:
@@ -101,7 +102,7 @@ docker push pcismyname/car-price-a3:latest
 
 # on the server
 ssh -i C:\Users\chids\.ssh\st127004 st127004@ml-brain.cs.ait.ac.th \
-  "cd ~ && docker compose pull && docker compose up -d"
+  "cd ~/a3 && docker compose pull && docker compose up -d"
 ```
 
-Live URL (once deployed): **https://web-st127004.ml.brain.cs.ait.ac.th**
+Live URL (once deployed): **https://web-st127004-a3.ml.brain.cs.ait.ac.th**
