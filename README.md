@@ -35,6 +35,9 @@ As instructed:
   instructions. The saved runs are ready to be registered as `st127004-a3-model` at *Staging*.
 - **Objective 3 (CI/CD):** does **not** depend on the server and is **complete**.
 
+**Resume plan:** the exact steps to finish Objectives 1 & 2 once the server returns are in
+[`docs/handoff-mlflow.md`](docs/handoff-mlflow.md).
+
 ---
 
 ## Task completion
