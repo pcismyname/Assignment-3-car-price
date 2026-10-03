@@ -9279,10 +9279,15 @@ unit tests live in <code>app/code/tests/test_predict.py</code>:<ul>
 <li><code>test_model_output_has_expected_shape</code> — <code>predict_proba</code> returns shape <code>(n, 4)</code>.</li>
 </ul>
 </li>
-<li><strong>CD</strong> — if the tests pass on <code>main</code>, the workflow builds the Docker image, pushes it to Docker
-Hub, and SSH-deploys it to the CSIM server behind Traefik.</li>
+<li><strong>CD</strong> — if the tests pass on <code>main</code>, the workflow builds the Docker image and pushes
+<code>pcismyname/car-price-a3:latest</code> to Docker Hub.</li>
+<li><strong>Deploy (pull-based)</strong> — the CSIM server only accepts SSH from inside the AIT network, so
+GitHub's runners cannot SSH in. Instead, an <code>updater</code> container next to the app on the server
+pulls <code>latest</code> every 5 minutes and recreates <code>web-st127004-a3</code> (served by Traefik at
+<code>web-st127004-a3.ml.brain.cs.ait.ac.th</code>) when the image changed. Because <code>latest</code> is only pushed
+after the tests pass, a failing commit never reaches the server.</li>
 </ol>
-<p>See the README for the GitHub Secrets the pipeline needs.</p>
+<p>See the README and <code>docs/server-docker-compose.yaml</code> for the setup.</p>
 <hr/>
 <h3 id="Summary">Summary<a class="anchor-link" href="#Summary">¶</a></h3><ul>
 <li>4-class problem via price quartiles; multinomial logistic regression <strong>from scratch</strong>.</li>
