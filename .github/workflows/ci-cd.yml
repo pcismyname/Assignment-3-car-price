@@ -1,8 +1,15 @@
 name: CI/CD
 
 # Objective 3: on every push we run the unit tests (Continuous Integration);
-# if they pass on main, we build + push the Docker image and deploy it to the
-# CSIM server (Continuous Deployment).
+# if they pass on main, we build + push the Docker image (Continuous Deployment).
+#
+# How the image reaches the server (pull-based CD):
+#   ml-brain only accepts SSH from inside the AIT network, so GitHub's runners
+#   cannot SSH in (the connection times out). Instead, the `updater` container
+#   in ~/a3/docker-compose.yaml on the server (docs/server-docker-compose.yaml)
+#   pulls `latest` every 5 minutes and recreates web-st127004-a3 when it changed.
+#   `latest` is only pushed after the tests pass, so a failing commit never
+#   reaches the server.
 on:
   push:
     branches: [main]
@@ -56,35 +63,6 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/car-price-a3:latest
 
-      - name: Deploy to the CSIM server over SSH
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          passphrase: ${{ secrets.SSH_PASSPHRASE }}
-          script: |
-            # Write the A3 compose into its own dir so the A2 deployment is untouched.
-            mkdir -p ~/a3
-            cat > ~/a3/docker-compose.yaml <<'EOF'
-            services:
-              web-st127004-a3:
-                image: pcismyname/car-price-a3:latest
-                container_name: web-st127004-a3
-                networks:
-                  - web
-                labels:
-                  - "traefik.enable=true"
-                  - "traefik.http.routers.st127004-a3.rule=Host(`web-st127004-a3.ml.brain.cs.ait.ac.th`)"
-                  - "traefik.http.routers.st127004-a3.entrypoints=websecure"
-                  - "traefik.http.routers.st127004-a3.tls=true"
-                  - "traefik.http.routers.st127004-a3.tls.certresolver=letsencrypt"
-                  - "traefik.http.services.st127004-a3.loadbalancer.server.port=8501"
-                restart: unless-stopped
-            networks:
-              web:
-                external: true
-            EOF
-            cd ~/a3
-            docker compose pull
-            docker compose up -d
+      - name: Deployment handled by the server's updater
+        run: |
+          echo "::notice::Pushed ${{ secrets.DOCKERHUB_USERNAME }}/car-price-a3:latest. The updater on ml-brain deploys it within 5 minutes (https://web-st127004-a3.ml.brain.cs.ait.ac.th)."

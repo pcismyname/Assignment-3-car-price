@@ -95,7 +95,7 @@ overlap more, as expected for price quartiles.
 | `tests/` | From-scratch model + metric tests (vs scikit-learn) |
 | `app/code/tests/` | The two **required** model unit tests (+ extras) |
 | `.github/workflows/ci-cd.yml` | CI/CD pipeline |
-| `docs/task3_deployment.md` | Deployment record (Traefik, Docker Hub, SSH) |
+| `docs/task3_deployment.md` | Deployment record (Traefik, Docker Hub, pull-based updater) |
 
 ---
 
@@ -142,34 +142,29 @@ The app collects a few car details and predicts one of four price bands
 
 1. **CI** — on every push / PR to `main`, install deps and run `pytest tests app/code/tests`.
    ✅ Runs automatically on GitHub-hosted runners.
-2. **CD** — on a push to `main` that passes CI: build the `app/` Docker image, push it to Docker
-   Hub, then SSH-deploy it on the CSIM server (writes `~/a3/docker-compose.yaml`,
-   `docker compose pull && up -d`). ✅ Build + push are automated.
+2. **CD** — on a push to `main` that passes CI: build the `app/` Docker image and push
+   `pcismyname/car-price-a3:latest` to Docker Hub. ✅ Automated.
+3. **Deploy (pull-based)** — on the server, an `updater` container next to the app runs
+   `docker compose pull` + `docker compose up -d` for **only** `web-st127004-a3` every 5 minutes,
+   so a new image goes live within ~5 minutes of a green pipeline. ✅ Automated.
 
-> **Network note on the deploy step.** The CSIM server only accepts SSH from **inside the AIT
-> campus network**, so GitHub-hosted runners (public internet) can't reach it — the SSH step times
-> out by design. The image build/push is fully automated; the final `docker compose up` is therefore
-> run from a campus machine. The current live deployment was performed this way from campus using the
-> exact `docker compose pull && up -d` the workflow issues. To make the pipeline's deploy step itself
-> green, register a **self-hosted runner** on a campus machine and set that job's `runs-on:
-> self-hosted` (see `docs/cicd_setup.md`).
+> **Why pull-based?** The CSIM server only accepts SSH from **inside the AIT network**, so
+> GitHub-hosted runners can't SSH in (the connection times out). Letting the server pull the image
+> avoids that, and because `latest` is only pushed after the tests pass, a failing commit never
+> reaches the server. The server side lives in [`docs/server-docker-compose.yaml`](docs/server-docker-compose.yaml)
+(copied once to `~/a3/docker-compose.yaml`, compose project `st127004-a3`).
 
 ### Required GitHub Secrets
 
-Add these under **Settings → Secrets and variables → Actions** for the deploy job to work:
+Add these under **Settings → Secrets and variables → Actions** (only Docker Hub is needed — the server pulls):
 
 | Secret | Meaning |
 |---|---|
 | `DOCKERHUB_USERNAME` | Docker Hub username (e.g. `pcismyname`) |
 | `DOCKERHUB_TOKEN` | Docker Hub access token |
-| `SSH_HOST` | `ml-brain.cs.ait.ac.th` |
-| `SSH_USER` | `st127004` |
-| `SSH_PRIVATE_KEY` | Private key authorised on the server (contents of `~/.ssh/st127004`) |
-| `SSH_PASSPHRASE` | Passphrase for that key |
 
 **Step-by-step setup (create repo → set secrets → push → watch):** see
 [`docs/cicd_setup.md`](docs/cicd_setup.md).
 
 Until the secrets are set, the `test` job still runs on every push (CI works standalone); the
-`build-and-deploy` job simply fails at the login/deploy step, which you can enable once the secrets
-are in place. See `docs/task3_deployment.md` for the server-side `docker-compose.yaml`.
+`build-and-deploy` job fails at the Docker Hub login step until they are set. See `docs/task3_deployment.md` for the server-side `docker-compose.yaml`.

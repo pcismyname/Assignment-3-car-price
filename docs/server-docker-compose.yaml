@@ -1,9 +1,11 @@
-# Server-side compose file for the A3 app. The CI/CD deploy step writes this
-# automatically to ~/a3/docker-compose.yaml on ml-brain.cs.ait.ac.th, so you do
-# NOT need to copy it manually. It is kept here for reference / manual deploys.
+# Server-side compose file for the A3 app, kept at ~/a3/docker-compose.yaml on
+# ml-brain.cs.ait.ac.th. Copy it there once (scp) and run `docker compose up -d`
+# from ~/a3; after that, deployment is automatic (see the `updater` service).
 #
 # A3 uses its OWN subdomain, container, and router names so it runs alongside the
 # A2 app without replacing it. Traefik routes HTTPS here; no host port is published.
+name: st127004-a3   # unique project name: compose project names are shared server-wide
+
 services:
   web-st127004-a3:
     image: pcismyname/car-price-a3:latest
@@ -17,6 +19,30 @@ services:
       - "traefik.http.routers.st127004-a3.tls=true"
       - "traefik.http.routers.st127004-a3.tls.certresolver=letsencrypt"
       - "traefik.http.services.st127004-a3.loadbalancer.server.port=8501"
+    restart: unless-stopped
+
+  # Continuous Deployment (pull-based). GitHub's runners cannot SSH into
+  # ml-brain (it only accepts SSH from inside the AIT network), so the server
+  # pulls instead: every 5 minutes this container pulls the `latest` image and
+  # recreates web-st127004-a3 only if the image changed. CI pushes `latest` only
+  # after the tests pass, so a failing commit never reaches the server.
+  # It manages ONLY the web-st127004-a3 service of this compose project.
+  updater:
+    image: docker:27-cli
+    container_name: web-st127004-a3-updater
+    working_dir: /a3
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./docker-compose.yaml:/a3/docker-compose.yaml:ro
+    command:
+      - sh
+      - -c
+      - |
+        while true; do
+          echo "$$(date -u '+%F %T') checking for a new image"
+          docker compose pull web-st127004-a3 && docker compose up -d --no-deps web-st127004-a3
+          sleep 300
+        done
     restart: unless-stopped
 
 networks:

@@ -39,7 +39,9 @@ Screenshots: `artifacts/mlflow_runs.png`, `mlflow_best_run.png`, `mlflow_model_s
 2. **`build-and-deploy`** — `needs: test`, runs only on a push to `main`:
    - `docker/login-action` → Docker Hub
    - `docker/build-push-action` builds `./app` and pushes `<user>/car-price-a3:latest`
-   - `appleboy/ssh-action` SSHes to the server and runs `docker compose pull && docker compose up -d`
+   - deployment is **pull-based**: the server's `updater` container pulls `latest` every 5 minutes
+     and recreates `web-st127004-a3` if it changed (GitHub runners can't SSH into ml-brain from
+     outside the AIT network)
 
 ### GitHub Secrets required
 
@@ -47,17 +49,15 @@ Screenshots: `artifacts/mlflow_runs.png`, `mlflow_best_run.png`, `mlflow_model_s
 |---|---|
 | `DOCKERHUB_USERNAME` | `pcismyname` |
 | `DOCKERHUB_TOKEN` | Docker Hub access token |
-| `SSH_HOST` | `ml-brain.cs.ait.ac.th` |
-| `SSH_USER` | `st127004` |
-| `SSH_PRIVATE_KEY` | Ed25519 private key authorised on the server |
-| `SSH_PASSPHRASE` | Passphrase protecting that key |
 
 ---
 
 ## Server-side `docker-compose.yaml`
 
-The CI/CD deploy step **writes this automatically** to `~/a3/docker-compose.yaml` on the server and
-runs `docker compose pull && up -d` from `~/a3`. A3 uses its **own** subdomain / container / router
+Copied once to `~/a3/docker-compose.yaml` on the server and started with `docker compose up -d`
+from `~/a3`; the `updater` service in it keeps the app on the latest image. The full file (with the
+updater) is [`docs/server-docker-compose.yaml`](server-docker-compose.yaml); the compose project is
+named `st127004-a3` because project names are shared server-wide. A3 uses its **own** subdomain / container / router
 (`web-st127004-a3`) so it runs **alongside** the A2 app rather than replacing it.
 
 ```yaml
