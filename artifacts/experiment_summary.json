@@ -27,5 +27,9 @@
   "test_macro_f1": 0.7136956508236111,
   "test_weighted_f1": 0.7183346702711786,
   "test_macro_precision": 0.7148594064338845,
-  "test_macro_recall": 0.7130739479987609
+  "test_macro_recall": 0.7130739479987609,
+  "best_model_run_id": "e0e34f70d7e44e61a41975a411c386d9",
+  "registered_model": "st127004-a3-model",
+  "registered_version": "1",
+  "registered_stage": "Staging"
 }

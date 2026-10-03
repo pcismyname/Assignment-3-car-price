@@ -23,20 +23,26 @@ Luxury) with its rupee range and the model's confidence.
 
 ---
 
-## ⚠️ MLflow server status (please read)
+## MLflow (Objectives 1 & 2) — local, per the TA's updated grading
 
-Per the TA's notice, the CSIM MLflow server `mlflow.ml.brain.cs.ait.ac.th` is **currently down**.
-As instructed:
+Because the course MLflow server is unstable, the TA changed the grading: logging to the course
+server is **no longer required**; instead the submission includes **screenshots of the MLflow
+experiment runs and the best model**, logged to a **local** MLflow instance as in A2.
 
-- **Objective 1 (logging):** the experiment is logged **locally** to a sqlite store (`mlflow.db`) in
-  the meantime. The experiment name is `st127004-a3`. Switching to the server later is a one-line
-  change of `tracking_uri` (see `a3_experiment.run_mlflow_experiment` and the notebook).
-- **Objective 2 (model registry):** **deferred** until the server is restored, awaiting further
-  instructions. The saved runs are ready to be registered as `st127004-a3-model` at *Staging*.
-- **Objective 3 (CI/CD):** does **not** depend on the server and is **complete**.
+- **Objective 1:** experiment **`st127004-a3`** logged to the local store `sqlite:///mlflow.db`
+  (params + metrics only — the dataset is **not** logged). The best configuration is refit and
+  **saved as an MLflow pyfunc model** in the run `best-final-model`.
+- **Objective 2:** that model is registered as **`st127004-a3-model`** (version 1) and moved to
+  **Staging** (`run_a3_experiment.py` → `a3_experiment.log_and_register_best_model`).
 
-**Resume plan:** the exact steps to finish Objectives 1 & 2 once the server returns are in
-[`docs/handoff-mlflow.md`](docs/handoff-mlflow.md).
+| Screenshot | Shows |
+|---|---|
+| ![runs](artifacts/mlflow_runs.png) | All 27 sweep runs + `best-final-model` with their CV/test metrics |
+| ![best run](artifacts/mlflow_best_run.png) | Best run: params, test metrics, logged model, registered as `st127004-a3-model v1` |
+| ![model staging](artifacts/mlflow_model_staging.png) | Model registry: `st127004-a3-model` **Version 1 → Stage: Staging** |
+| ![model version](artifacts/mlflow_model_version.png) | Registered model version detail |
+
+(The optional course-server route was not used.)
 
 ---
 
@@ -46,8 +52,8 @@ As instructed:
 |---|---|
 | **Task 1** — bucket price into 4 classes (`pd.qcut`); from-scratch `accuracy`, per-class `precision`/`recall`/`f1`, `macro_*`, `weighted_*`; compare to sklearn; explain *support* | ✅ Complete |
 | **Task 2** — optional Ridge (L2) penalty on the logistic loss (on/off + `lambda_`) | ✅ Complete |
-| **Task 3 · Obj 1** — MLflow experiment logged (locally — server down) as `st127004-a3` | ✅ Complete (local) |
-| **Task 3 · Obj 2** — register best model to MLflow *Models* at *Staging* | ⏳ Deferred (server down) |
+| **Task 3 · Obj 1** — MLflow experiment `st127004-a3` logged (local, per TA notice) + model saved | ✅ Complete (screenshots) |
+| **Task 3 · Obj 2** — best model registered as `st127004-a3-model` at *Staging* | ✅ Complete (screenshots) |
 | **Task 3 · Obj 3** — GitHub Actions CI (unit tests) → CD (build, push, deploy) | ✅ Complete |
 
 ---
@@ -83,8 +89,8 @@ overlap more, as expected for price quartiles.
 | `run_a3_experiment.py` | Reproduces the full 27-run sweep, saves artifacts + the model bundle |
 | `Cars.csv` | Course dataset (committed so the notebook and CI are self-contained) |
 | `model/a3_car_price_classifier.pkl` | Fitted bundle: preprocessor + classifier + class bin edges |
-| `artifacts/` | `cv_results.csv`, `experiment_summary.json`, confusion-matrix & loss figures |
-| `mlflow.db` | Local MLflow store — all runs with params + metrics |
+| `artifacts/` | `cv_results.csv`, `experiment_summary.json`, confusion-matrix & loss figures, MLflow screenshots |
+| `mlflow.db` | Local MLflow store — runs, saved model, registry (not committed; regenerate with `run_a3_experiment.py`) |
 | `app/` | Dockerised Streamlit app that predicts the price **category** |
 | `tests/` | From-scratch model + metric tests (vs scikit-learn) |
 | `app/code/tests/` | The two **required** model unit tests (+ extras) |

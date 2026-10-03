@@ -4,9 +4,11 @@ Steps
 -----
 1. Load and clean ``Cars.csv`` (A1/A2 preprocessing).
 2. Bucket ``selling_price`` into 4 quartile classes.
-3. Run the MLflow sweep locally (sqlite store — CSIM server is down per the TA).
+3. Run the MLflow sweep locally (sqlite store — per the TA notice, the course
+   server is optional; screenshots of the local runs/model are submitted).
 4. Refit the best configuration on the full training split.
 5. Save the model bundle, CV table, summary JSON, and evaluation figures.
+6. Log the best model to MLflow and register it as ``st127004-a3-model`` at Staging.
 
 Run:  ``python run_a3_experiment.py``
 """
@@ -34,6 +36,7 @@ from a3_experiment import (
     clean_car_data,
     configuration_grid,
     fit_final_model,
+    log_and_register_best_model,
     run_mlflow_experiment,
 )
 from logistic_regression import LogisticRegression
@@ -45,6 +48,7 @@ APP_MODEL_DIR = ROOT / "app" / "code"
 STUDENT_ID = "st127004"
 TRACKING_URI = f"sqlite:///{(ROOT / 'mlflow.db').as_posix()}"
 EXPERIMENT_NAME = f"{STUDENT_ID}-a3"
+MODEL_NAME = f"{STUDENT_ID}-a3-model"
 RANDOM_STATE = 42
 
 
@@ -126,6 +130,21 @@ def main() -> None:
     _plot_confusion(y_test, test_pred, ARTIFACTS / "confusion_matrix.png")
     _plot_loss(model.loss_history_, ARTIFACTS / "loss_curve.png")
     print("Wrote artifacts: cv_results.csv, experiment_summary.json, confusion_matrix.png, loss_curve.png")
+
+    # 6. Save the best model in MLflow and register it at Staging -------------
+    run_id, version = log_and_register_best_model(
+        str(bundle_path),
+        tracking_uri=TRACKING_URI,
+        experiment_name=EXPERIMENT_NAME,
+        model_name=MODEL_NAME,
+        best_config=best_config,
+        test_metrics=test_metrics,
+        input_example=x_test.head(3),
+    )
+    summary.update({"best_model_run_id": run_id, "registered_model": MODEL_NAME,
+                    "registered_version": version, "registered_stage": "Staging"})
+    (ARTIFACTS / "experiment_summary.json").write_text(json.dumps(summary, indent=2))
+    print(f"Registered {MODEL_NAME} v{version} -> Staging (run {run_id})")
 
 
 def _plot_confusion(y_true, y_pred, path: Path) -> None:

@@ -243,3 +243,63 @@ def run_mlflow_experiment(
         .sort_values(["cv_accuracy", "cv_macro_f1"], ascending=[False, False])
         .reset_index(drop=True)
     )
+
+
+def log_and_register_best_model(
+    bundle_path: str,
+    *,
+    tracking_uri: str,
+    experiment_name: str,
+    model_name: str,
+    best_config: dict[str, object],
+    test_metrics: dict[str, float],
+    input_example: pd.DataFrame,
+    stage: str = "Staging",
+) -> tuple[str, str]:
+    """Objective 1 "Save the model" + Objective 2 "register at Staging".
+
+    Our model is a custom bundle (sklearn preprocessor + from-scratch
+    ``LogisticRegression``), so it is wrapped as an MLflow *pyfunc* model. The
+    best configuration is logged as its own run with the model artifact, then
+    registered under ``model_name`` and moved to the ``stage`` (Staging).
+    Returns ``(run_id, model_version)``.
+    """
+    import mlflow
+    import mlflow.pyfunc
+    from mlflow.tracking import MlflowClient
+
+    class BundleModel(mlflow.pyfunc.PythonModel):
+        """Serve the A3 bundle through MLflow: raw feature rows -> class 0..3."""
+
+        def load_context(self, context):
+            import joblib
+            self.bundle = joblib.load(context.artifacts["bundle"])
+
+        def predict(self, context, model_input, params=None):
+            from a3_experiment import predict_class
+            return predict_class(self.bundle, model_input)
+
+    mlflow.set_tracking_uri(tracking_uri)
+    mlflow.set_experiment(experiment_name)
+    with mlflow.start_run(run_name="best-final-model") as run:
+        mlflow.log_params(best_config)
+        mlflow.log_metrics({k: float(v) for k, v in test_metrics.items()})
+        mlflow.set_tag("assignment", "A3 Predicting Car Price - Classification")
+        mlflow.set_tag("role", "best model (refit on full training split)")
+        # Only the model is logged — never the dataset (Objective 1).
+        mlflow.pyfunc.log_model(
+            name="model",
+            python_model=BundleModel(),
+            artifacts={"bundle": bundle_path},
+            code_paths=["logistic_regression.py", "a3_experiment.py"],
+            input_example=input_example,
+        )
+        run_id = run.info.run_id
+
+    version = mlflow.register_model(f"runs:/{run_id}/model", model_name)
+    client = MlflowClient()
+    # Stages are deprecated in MLflow 3 but still supported; the assignment asks
+    # for "Staging", so set the stage and also a matching alias.
+    client.transition_model_version_stage(model_name, version.version, stage=stage)
+    client.set_registered_model_alias(model_name, stage.lower(), version.version)
+    return run_id, str(version.version)

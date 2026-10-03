@@ -18,23 +18,15 @@ Browser → HTTPS → Traefik (:443) → web-st127004 container (Streamlit :8501
 
 ---
 
-## Objective 1 — MLflow logging (local, server down)
+## Objectives 1 & 2 — MLflow (local, per the TA's updated grading)
 
-The CSIM MLflow server is currently down (TA notice). The experiment is logged locally:
-
-```python
-tracking_uri = "sqlite:///mlflow.db"      # temporary
-# tracking_uri = "http://mlflow.ml.brain.cs.ait.ac.th/"   # once the server is restored
-mlflow.set_experiment("st127004-a3")
-```
-
-Reproduce with `python run_a3_experiment.py`; browse with
+The course MLflow server is unstable, so the TA made server logging optional and grades Objectives 1
+and 2 from screenshots of a **local** MLflow instance. `python run_a3_experiment.py` logs the sweep
+to `sqlite:///mlflow.db` (experiment `st127004-a3`, no dataset logged), saves the best model as a
+pyfunc in run `best-final-model`, and registers it as `st127004-a3-model` v1 at **Staging**.
+Screenshots: `artifacts/mlflow_runs.png`, `mlflow_best_run.png`, `mlflow_model_staging.png`,
+`mlflow_model_version.png`. Browse with
 `mlflow server --backend-store-uri sqlite:///mlflow.db --host 127.0.0.1 --port 5000`.
-
-## Objective 2 — Model registry (deferred)
-
-Once the server returns, register the best run as `st127004-a3-model` and move it to *Staging* via
-the MLflow **Models** UI (or `mlflow.register_model(...)`).
 
 ---
 

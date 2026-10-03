@@ -1,5 +1,9 @@
 # Handoff — resume Objectives 1 & 2 once the MLflow server is back
 
+> **Resolved 2026-10-03.** The TA made the course server optional; Objectives 1 & 2 are now done
+> locally (model saved + registered `st127004-a3-model` at Staging) with screenshots in
+> `artifacts/`. The steps below are kept only for reference.
+
 The CSIM MLflow server `mlflow.ml.brain.cs.ait.ac.th` is down (TA notice), so **Task 3 Objective 1**
 was logged **locally** and **Objective 2 (registry) is deferred**. Everything else is finished. This
 document is the exact to-do list to finish those two once the server is restored.
